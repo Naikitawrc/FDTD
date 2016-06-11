@@ -1,14 +1,15 @@
 import numpy as np
 import math as mt
 import matplotlib.pyplot as plt
+import scipy.constants as sc
 
 #GROUND CONDITIONS###########
-size=500;maxTime=20000
+size=500;maxTime=2150
 imp0=377.0
 eps=5
 dt=3.3e-18
 dx=1e-9
-c=3e8
+c=sc.speed_of_light
 Sc=c*dt/dx
 print('SCourant',Sc)
 #############################
@@ -30,16 +31,19 @@ for qtime in np.arange(0,maxTime+1,1):
 
     #print(qtime)
     #Source inizialization############################
-    ez[size/2-1] += 0.5*mt.exp(-(qtime-delay) ** 2 / (2.0 * source_width**2));
+    ez[size/2-1] += 0.5*mt.exp(-(qtime-delay) ** 2 / (2.0 * source_width**2))
     ##################################################
-    #ABS BOUNDARIES FOR H_FIELD###
-    hy[size-1]=hy[size-2]
+    #ABC BOUNDARIES FOR H_FIELD###
+    #hy[size-1]=hy[size-2] #Classical ABC
+    pa=hy[size-2]
     ##############################
     for mm in range(0,size-1):
         #update magnetic field
         hy[mm]=hy[mm]+Sc*(ez[mm+1]-ez[mm])/imp0
-    #ABS BOUNDARIES FOR E_FIELD###
-    ez[0]=ez[1]
+    hy[size-1]=pa+(c/mt.sqrt(eps)*dt-dx)/(c/mt.sqrt(eps)*dt+dx)*(hy[size-2]-hy[size-1]) #MUR ABC
+    #ABC BOUNDARIES FOR E_FIELD###
+    #ez[0]=ez[1] #Classical ABC
+    pb=ez[1]
     ##############################
     for mm in range(1,size):
          #pdate electric field
@@ -48,6 +52,7 @@ for qtime in np.arange(0,maxTime+1,1):
     #hy_snap[i]=hy[snap_moment]
    # if((max(ez)>0)&(max(ez)<1e-15)&(qtime>50)): break
     i=i+1
+    ez[0]=pb+(c/mt.sqrt(eps)*dt-dx)/(c/mt.sqrt(eps)*dt+dx)*(ez[1]-ez[0])#MUR ABC
     #if (ez[size/2-1]<-0.99 and ez[size/2-1]>-1) and (hy[size/2-1]<0.1 and hy[size/2-1]>0): break
 
 #PLOT GRAPH#####################
@@ -66,8 +71,18 @@ for qtime in np.arange(0,maxTime+1,1):
     l1.remove()
     l2 = hY.pop(0)
     l2.remove()
-################################
+################################PRINT#####
+eZ=plt.plot(range(0,size,1),ez,'-',color='b')
+hY=plt.plot(range(0,size,1),hy*imp0,'-',color='g')
+plt.ylabel('Ez-field, V/m')
+plt.xlabel('x, nm')
+ax = fig.add_subplot(111)
+fig.subplots_adjust(top=0.85)
+ax.set_title('Time = {0} ats'.format(qtime))
+plt.ylim([1.1*min([min(ez),min(hy*imp0)]),1.1*max([max(ez),max(hy*imp0)])])
+ax.ticklabel_format(axis='y', style='sci', scilimits=(-2,2))
+plt.show()
 
-#fig.savefig('/Users/nikitapavlov/Library/Mobile Documents/com~apple~CloudDocs/University/Kostya/step0_inizavanish.pdf')
+fig.savefig('/Users/nikitapavlov/Library/Mobile Documents/com~apple~CloudDocs/University/Kostya/step1_eps5_2150.pdf')
  #plt.pause(0.5)
 
